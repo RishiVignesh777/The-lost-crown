@@ -1,0 +1,7 @@
+{
+  "name": "The Lost Crown: Fall of Suryagarh",
+  "description": "An epic 3D mythical fantasy action-adventure game set in the ruined kingdom of Suryagarh. Explore ancient 3D temples, solve architectural puzzles, battle shadow guardians, and recover the Solar Crown.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
