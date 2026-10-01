@@ -192,15 +192,16 @@ export class TerrainSystem {
 
     // Cavern rocky ridges & crystal chasms
     for (let i = 0; i < 18; i++) {
+      const h = 2 + Math.random() * 6;
       const rock = MeshBuilder.CreateBox(`Cave_Rock_${i}`, {
         width: 3 + Math.random() * 5,
-        height: 2 + Math.random() * 6,
+        height: h,
         depth: 3 + Math.random() * 5
       }, scene);
       rock.material = caveMat;
       const angle = (i / 18) * Math.PI * 2;
       const dist = 28 + Math.random() * 25;
-      rock.position.set(Math.cos(angle) * dist, rock.scaling.y / 2, Math.sin(angle) * dist);
+      rock.position.set(Math.cos(angle) * dist, h / 2, Math.sin(angle) * dist);
       rock.rotation.y = Math.random() * Math.PI;
       rock.parent = this.root;
       rock.checkCollisions = true;

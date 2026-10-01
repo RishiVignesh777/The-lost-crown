@@ -9,6 +9,11 @@ export class HUD {
   private locationBadgeEl: HTMLDivElement;
   private toastTimer?: number;
 
+  // Radar
+  private radarCanvas?: HTMLCanvasElement;
+  private radarCtx?: CanvasRenderingContext2D | null;
+  private coordsEl?: HTMLDivElement;
+
   // Joystick
   private joyKnob?: HTMLDivElement;
   private joyActive = false;
@@ -43,6 +48,25 @@ export class HUD {
         </div>
         <div id="hud-location-badge" class="mt-2 text-[11px] text-[#cfbe9e] border-t border-[#4d3b24] pt-1">
           Ancient Kingdom Gate
+        </div>
+      </div>
+
+      <!-- 3D COMPASS & RADAR MINI-MAP -->
+      <div id="hud-minimap-container" class="absolute top-28 left-4 pointer-events-auto bg-[#18110b]/92 border-2 border-[#d4af37] rounded-lg p-2 shadow-2xl flex flex-col items-center cursor-pointer hover:border-[#ffd700] transition group">
+        <div class="flex items-center justify-between w-full px-1 mb-1">
+          <span class="text-[9px] font-serif font-bold text-[#d4af37] uppercase tracking-wider">3D RADAR</span>
+          <span id="hud-coords" class="text-[9px] font-mono text-[#ffe599]">X: 0 Z: -45</span>
+        </div>
+        <div class="relative w-28 h-28 rounded-full bg-[#120a05] border border-[#8c6d36] overflow-hidden flex items-center justify-center shadow-inner">
+          <canvas id="hud-radar-canvas" width="112" height="112" class="w-full h-full block"></canvas>
+          <div class="absolute inset-0 pointer-events-none rounded-full border border-[#d4af37]/30"></div>
+          <span class="absolute top-0.5 text-[8px] font-bold text-[#f5c542] font-mono pointer-events-none">N</span>
+          <span class="absolute bottom-0.5 text-[8px] font-bold text-[#8c6d36] font-mono pointer-events-none">S</span>
+          <span class="absolute right-1 text-[8px] font-bold text-[#8c6d36] font-mono pointer-events-none">E</span>
+          <span class="absolute left-1 text-[8px] font-bold text-[#8c6d36] font-mono pointer-events-none">W</span>
+        </div>
+        <div class="text-[9px] text-[#ffe599] font-serif mt-1 group-hover:text-white transition flex items-center space-x-1">
+          <span>🗺️ [M] 3D Realm Map</span>
         </div>
       </div>
 
@@ -95,16 +119,26 @@ export class HUD {
     this.questTitleEl = this.container.querySelector('#hud-quest-title') as HTMLDivElement;
     this.questObjEl = this.container.querySelector('#hud-quest-obj') as HTMLDivElement;
     this.locationBadgeEl = this.container.querySelector('#hud-location-badge') as HTMLDivElement;
+    this.radarCanvas = this.container.querySelector('#hud-radar-canvas') as HTMLCanvasElement;
+    this.coordsEl = this.container.querySelector('#hud-coords') as HTMLDivElement;
+    if (this.radarCanvas) {
+      this.radarCtx = this.radarCanvas.getContext('2d');
+    }
 
     // Attach button events
-    this.container.querySelector('#btn-bag')?.addEventListener('click', this.onOpenInventory);
-    this.container.querySelector('#btn-map')?.addEventListener('click', this.onOpenMap);
-    this.container.querySelector('#btn-log')?.addEventListener('click', this.onOpenQuests);
-    this.container.querySelector('#btn-pause')?.addEventListener('click', this.onOpenMenu);
+    this.container.querySelector('#hud-minimap-container')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onOpenMap();
+    });
 
-    this.container.querySelector('#btn-touch-attack')?.addEventListener('click', this.onAttack);
-    this.container.querySelector('#btn-touch-interact')?.addEventListener('click', this.onInteract);
-    this.container.querySelector('#btn-touch-jump')?.addEventListener('click', this.onJump);
+    this.container.querySelector('#btn-bag')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenInventory(); });
+    this.container.querySelector('#btn-map')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenMap(); });
+    this.container.querySelector('#btn-log')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenQuests(); });
+    this.container.querySelector('#btn-pause')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenMenu(); });
+
+    this.container.querySelector('#btn-touch-attack')?.addEventListener('click', (e) => { e.stopPropagation(); this.onAttack(); });
+    this.container.querySelector('#btn-touch-interact')?.addEventListener('click', (e) => { e.stopPropagation(); this.onInteract(); });
+    this.container.querySelector('#btn-touch-jump')?.addEventListener('click', (e) => { e.stopPropagation(); this.onJump(); });
 
     // Setup Virtual Joystick
     this.setupJoystick();
@@ -118,6 +152,7 @@ export class HUD {
     const maxRadius = 40;
 
     const handlePointerDown = (e: PointerEvent) => {
+      e.stopPropagation();
       this.joyActive = true;
       this.joyTouchId = e.pointerId;
       const rect = joyBase.getBoundingClientRect();
@@ -130,6 +165,7 @@ export class HUD {
     };
 
     const handlePointerMove = (e: PointerEvent) => {
+      e.stopPropagation();
       if (!this.joyActive || e.pointerId !== this.joyTouchId) return;
 
       let dx = e.clientX - this.joyOrigin.x;
@@ -235,5 +271,102 @@ export class HUD {
 
   public setVisible(visible: boolean): void {
     this.container.style.display = visible ? 'block' : 'none';
+  }
+
+  public updateRadar(
+    playerPos: { x: number; z: number },
+    playerRotY: number,
+    blips: Array<{ x: number; z: number; type: 'npc' | 'enemy' | 'portal' | 'objective' }> = []
+  ): void {
+    if (this.coordsEl) {
+      this.coordsEl.innerText = `X: ${Math.round(playerPos.x)} Z: ${Math.round(playerPos.z)}`;
+    }
+    if (!this.radarCtx || !this.radarCanvas) return;
+
+    const ctx = this.radarCtx;
+    const w = this.radarCanvas.width;
+    const h = this.radarCanvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const radarRange = 45; // meters radius
+    const scale = (cx - 8) / radarRange;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Dark parchment background
+    ctx.fillStyle = '#120a05';
+    ctx.beginPath();
+    ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Concentric range rings
+    ctx.strokeStyle = '#5c4323';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, (cx - 8) * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, cx - 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Crosshairs
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.2)';
+    ctx.beginPath();
+    ctx.moveTo(cx, 6);
+    ctx.lineTo(cx, h - 6);
+    ctx.moveTo(6, cy);
+    ctx.lineTo(w - 6, cy);
+    ctx.stroke();
+
+    // Draw blips
+    blips.forEach(b => {
+      const dx = b.x - playerPos.x;
+      const dz = b.z - playerPos.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > radarRange) return;
+
+      const screenX = cx + dx * scale;
+      const screenY = cy - dz * scale; // Invert Z for top-down canvas
+
+      ctx.beginPath();
+      if (b.type === 'enemy') {
+        ctx.fillStyle = '#e74c3c';
+        ctx.arc(screenX, screenY, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (b.type === 'npc') {
+        ctx.fillStyle = '#f1c40f';
+        ctx.arc(screenX, screenY, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (b.type === 'portal') {
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 1.5;
+        ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (b.type === 'objective') {
+        ctx.fillStyle = '#1abc9c';
+        ctx.arc(screenX, screenY, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Draw Player Pointer in center
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-playerRotY); // Rotate arrow to match 3D player heading
+
+    ctx.fillStyle = '#f5c542';
+    ctx.beginPath();
+    ctx.moveTo(0, -7);
+    ctx.lineTo(4, 5);
+    ctx.lineTo(0, 3);
+    ctx.lineTo(-4, 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
   }
 }

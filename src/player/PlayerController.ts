@@ -3,9 +3,7 @@ import {
   ArcRotateCamera,
   Vector3,
   Axis,
-  Space,
-  KeyboardEventTypes,
-  PointerEventTypes
+  Ray
 } from '@babylonjs/core';
 import { Player } from './Player';
 import { playSound } from '../utils/helpers';
@@ -48,6 +46,8 @@ export class PlayerController {
     this.camera.upperRadiusLimit = 16.0;
     this.camera.lowerBetaLimit = 0.15;
     this.camera.upperBetaLimit = Math.PI / 2.05; // Prevent camera from dipping under ground
+    this.camera.panningSensibility = 0; // Disable camera target translation
+    this.camera.wheelPrecision = 50;
     this.camera.attachControl(canvas, true);
 
     // Camera collision against walls
@@ -185,18 +185,33 @@ export class PlayerController {
       }
     }
 
-    // Apply Gravity and Ground Check
+    // Dynamic Ground and Platform Detection via Raycast
+    const rayOrigin = new Vector3(
+      this.player.root.position.x,
+      this.player.root.position.y + 1.2,
+      this.player.root.position.z
+    );
+    const ray = new Ray(rayOrigin, new Vector3(0, -1, 0), 10.0);
+    const hit = this.scene.pickWithRay(ray, (mesh) => mesh.checkCollisions && mesh.isVisible);
+
+    let targetGroundY = 0;
+    if (hit && hit.hit && hit.pickedPoint) {
+      targetGroundY = hit.pickedPoint.y;
+    }
+
+    // Apply Gravity
     this.velocityY += this.gravity * deltaTime;
     this.player.root.position.y += this.velocityY * deltaTime;
 
-    const groundY = 0; // Standard ground level
-    if (this.player.root.position.y <= groundY) {
-      this.player.root.position.y = groundY;
+    if (this.player.root.position.y <= targetGroundY) {
+      this.player.root.position.y = targetGroundY;
       this.velocityY = 0;
       if (!this.isGrounded) {
         this.isGrounded = true;
         playSound(AUDIO_PATHS.STEP, 0.4);
       }
+    } else if (this.player.root.position.y > targetGroundY + 0.15) {
+      this.isGrounded = false;
     }
 
     this.player.update(deltaTime);

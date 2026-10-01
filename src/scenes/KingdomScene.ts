@@ -55,7 +55,27 @@ export class KingdomScene {
     this.scene = new Scene(this.engine);
     this.scene.collisionsEnabled = true;
 
+    // Force immediate resize
+    this.engine.resize();
+
+    // Use ResizeObserver for iframe responsive scaling
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => {
+        this.engine.resize();
+      });
+      ro.observe(canvas);
+    }
+
     this.initGame();
+  }
+
+  public resetToStart(): void {
+    SaveSystem.clearSave();
+    this.player.health = this.player.maxHealth;
+    this.hud.setHealth(this.player.health, this.player.maxHealth);
+    this.locationManager.changeLocation('kingdom_gate', new Vector3(0, 0, -45), 0);
+    this.updateHUDQuest();
+    this.hud.showToast('Awakened at the Ancient Kingdom Gate');
   }
 
   private initGame(): void {
@@ -150,9 +170,13 @@ export class KingdomScene {
       this.questUI.hide();
     });
 
-    this.mapUI = new MapUI(() => {
-      this.mapUI.hide();
-    });
+    this.mapUI = new MapUI(
+      () => this.mapUI.hide(),
+      (targetLocId) => {
+        this.locationManager.changeLocation(targetLocId);
+        this.hud.showToast(`Celestial Passage to ${this.locationManager.currentConfig.name}!`);
+      }
+    );
 
     this.menuUI = new MenuUI(
       () => this.menuUI.hide(),
@@ -304,7 +328,11 @@ export class KingdomScene {
       this.mapUI.hide();
     } else {
       this.closeOtherUIs();
-      this.mapUI.show(this.locationManager.getLocation(), this.locationManager.currentConfig.name);
+      this.mapUI.show(
+        this.locationManager.getLocation(),
+        this.locationManager.currentConfig.name,
+        this.locationManager.discoveredLocations
+      );
     }
   }
 
@@ -391,6 +419,28 @@ export class KingdomScene {
     // Update interaction system with player position
     this.interactionSystem.update(this.player.root.position);
     this.hud.setPrompt(this.interactionSystem.activePrompt);
+
+    // Update 3D Mini-Map Radar blips
+    const pPos = this.player.root.position;
+    const blips: Array<{ x: number; z: number; type: 'npc' | 'enemy' | 'portal' | 'objective' }> = [];
+
+    this.worldManager.npcManager.getNPCs().forEach(npc => {
+      blips.push({ x: npc.root.position.x, z: npc.root.position.z, type: 'npc' });
+    });
+
+    this.worldManager.enemyManager.getLivingEnemies().forEach(e => {
+      blips.push({ x: e.root.position.x, z: e.root.position.z, type: 'enemy' });
+    });
+
+    this.locationManager.currentConfig.connectedLocations.forEach(c => {
+      blips.push({ x: c.triggerPosition.x, z: c.triggerPosition.z, type: 'portal' });
+    });
+
+    this.hud.updateRadar(
+      { x: pPos.x, z: pPos.z },
+      this.player.root.rotation.y,
+      blips
+    );
 
     // Check proximity to world pickups
     this.checkWorldPickupProximity();

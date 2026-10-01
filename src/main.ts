@@ -1,8 +1,6 @@
 import { BootScene } from './scenes/BootScene';
-import { LoadingScene } from './scenes/LoadingScene';
 import { MenuScene } from './scenes/MenuScene';
 import { KingdomScene } from './scenes/KingdomScene';
-import { SaveSystem } from './gameplay/SaveSystem';
 
 async function bootstrap() {
   await BootScene.init();
@@ -12,29 +10,25 @@ async function bootstrap() {
     throw new Error('Canvas #renderCanvas not found in DOM.');
   }
 
-  // Show loading screen while initializing engine
-  const loading = new LoadingScene();
-  loading.setProgress(30, 'Awakening the 3D Kingdom...');
+  // Immediately initialize the 3D Kingdom Engine so the 3D game appears on screen right away
+  const kingdomScene = new KingdomScene(canvas);
 
-  setTimeout(async () => {
-    loading.setProgress(70, 'Loading ancient relics and architecture...');
-
-    setTimeout(async () => {
-      await loading.finish();
-
-      // Launch Menu Scene
-      new MenuScene((isNewGame) => {
-        if (isNewGame) {
-          SaveSystem.clearSave();
-        }
-        new KingdomScene(canvas);
-      });
-    }, 400);
-  }, 400);
+  // Display the 3D start & controls banner directly over the live 3D world
+  new MenuScene((isNewGame) => {
+    if (isNewGame) {
+      kingdomScene.resetToStart();
+    }
+  });
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => {
+    bootstrap().catch(err => {
+      console.error('Fatal initialization error in Suryagarh 3D:', err);
+    });
+  });
+} else {
   bootstrap().catch(err => {
     console.error('Fatal initialization error in Suryagarh 3D:', err);
   });
-});
+}
