@@ -8,12 +8,14 @@ import { PuzzleSystem } from '../gameplay/PuzzleSystem';
 import { InventorySystem } from '../gameplay/InventorySystem';
 import { NPCManager } from '../characters/NPCManager';
 import { EnemyManager } from '../characters/EnemyManager';
+import { EnvironmentDetailsSystem } from './EnvironmentDetailsSystem';
 import { Player } from '../player/Player';
 
 export class WorldManager {
   public terrainSystem: TerrainSystem;
   public buildingSystem: BuildingSystem;
   public environmentSystem: EnvironmentSystem;
+  public detailsSystem: EnvironmentDetailsSystem;
   public puzzleSystem: PuzzleSystem;
   public npcManager: NPCManager;
   public enemyManager: EnemyManager;
@@ -27,6 +29,7 @@ export class WorldManager {
     this.terrainSystem = new TerrainSystem(scene);
     this.buildingSystem = new BuildingSystem(scene);
     this.environmentSystem = new EnvironmentSystem(scene);
+    this.detailsSystem = new EnvironmentDetailsSystem(scene);
     this.puzzleSystem = new PuzzleSystem(scene);
     this.npcManager = new NPCManager(scene);
     this.enemyManager = new EnemyManager(scene, inventorySystem, onEnemyKilled);
@@ -34,7 +37,8 @@ export class WorldManager {
 
   public loadLocation(
     locationId: string,
-    onPuzzleSolved: (puzzleId: string) => void
+    onPuzzleSolved: (puzzleId: string) => void,
+    onReadChronicle?: (key: string, title: string) => void
   ): AncientLocation3DConfig {
     const config = getLocationConfig3D(locationId);
 
@@ -47,16 +51,21 @@ export class WorldManager {
     // 3. Build 3D Architecture & Structures
     this.buildingSystem.buildStructures(locationId);
 
-    // 4. Spawn NPCs
+    // 4. Build Surrounding Plants, Trees, Relics & Story Steles
+    if (onReadChronicle) {
+      this.detailsSystem.buildLocationDetails(locationId, this.interactionSystem, onReadChronicle);
+    }
+
+    // 5. Spawn NPCs
     this.npcManager.spawnNPCsForLocation(locationId);
 
-    // 5. Spawn 3D Enemies
+    // 6. Spawn 3D Enemies
     this.enemyManager.spawnEnemiesForLocation(locationId);
 
-    // 6. Setup Interactive Puzzles
+    // 7. Setup Interactive Puzzles
     this.puzzleSystem.setupPuzzlesForLocation(locationId, this.interactionSystem, onPuzzleSolved);
 
-    // 7. Spawn World Pickups for this location
+    // 8. Spawn World Pickups for this location
     this.spawnLocationPickups(locationId);
 
     return config;
@@ -87,6 +96,7 @@ export class WorldManager {
   public clear(): void {
     this.terrainSystem.clear();
     this.buildingSystem.clear();
+    this.detailsSystem.clear();
     this.puzzleSystem.clear();
     this.npcManager.clear();
     this.enemyManager.clear();

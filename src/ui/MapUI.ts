@@ -47,6 +47,8 @@ export class MapUI {
   private regionSubtitleEl: HTMLDivElement;
   private regionDescEl: HTMLDivElement;
   private regionStatusEl: HTMLDivElement;
+  private regionChronicleTitleEl: HTMLDivElement;
+  private regionChronicleTextEl: HTMLDivElement;
   private travelBtn: HTMLButtonElement;
   private currentLocBadgeEl: HTMLDivElement;
 
@@ -128,6 +130,17 @@ export class MapUI {
               <div id="region-climate" class="text-[#cfbe9e]">• Ancient Sandstone Architecture</div>
               <div id="region-guardians" class="text-[#cfbe9e]">• Solar Gate Guardians & Archivists</div>
             </div>
+
+            <!-- REGION STORY CHRONICLE -->
+            <div class="bg-[#24170a]/90 border border-[#d4af37]/50 rounded-lg p-3 text-xs space-y-1.5 mb-3 shadow">
+              <div class="text-[#f5c542] font-bold font-serif flex items-center space-x-1.5">
+                <span>📜</span>
+                <span id="region-chronicle-title">Chronicle I: The Shattered Bastion</span>
+              </div>
+              <div id="region-chronicle-text" class="text-[#e8d7b8] text-[11px] leading-relaxed italic">
+                “When skies darkened without rain, King Harsha stationed three hundred guardians upon these bastions.”
+              </div>
+            </div>
           </div>
 
           <!-- FAST TRAVEL BUTTON -->
@@ -146,6 +159,8 @@ export class MapUI {
     this.regionSubtitleEl = this.container.querySelector('#region-info-subtitle') as HTMLDivElement;
     this.regionDescEl = this.container.querySelector('#region-info-desc') as HTMLDivElement;
     this.regionStatusEl = this.container.querySelector('#region-status-badge') as HTMLDivElement;
+    this.regionChronicleTitleEl = this.container.querySelector('#region-chronicle-title') as HTMLDivElement;
+    this.regionChronicleTextEl = this.container.querySelector('#region-chronicle-text') as HTMLDivElement;
     this.currentLocBadgeEl = this.container.querySelector('#map-3d-cur-badge') as HTMLDivElement;
     this.travelBtn = this.container.querySelector('#btn-fast-travel') as HTMLButtonElement;
 
@@ -252,6 +267,7 @@ export class MapUI {
     this.buildLandmarks();
     this.buildConnectingRoads();
     this.buildCelestialCompass();
+    this.buildMiniatureFloraAndDetails();
 
     // Start 3D Render Loop
     this.engine.runRenderLoop(() => {
@@ -680,6 +696,71 @@ export class MapUI {
     }
   }
 
+  private buildMiniatureFloraAndDetails(): void {
+    if (!this.scene) return;
+    const scene = this.scene;
+
+    // 1. Miniature Desert Palms around Southern Plains
+    const palmMat = new StandardMaterial('mini_palm_leaf', scene);
+    palmMat.diffuseColor = Color3.FromHexString('#2e7d32');
+    const trunkMat = new StandardMaterial('mini_palm_trunk', scene);
+    trunkMat.diffuseColor = Color3.FromHexString('#795548');
+
+    const palmCoords = [
+      [-6, -24], [6, -24], [-8, -32], [8, -32],
+      [12, -18], [20, -18], [14, -8], [22, -8]
+    ];
+    palmCoords.forEach(([x, z], idx) => {
+      const trunk = MeshBuilder.CreateCylinder(`Mini_Palm_${idx}`, { diameterTop: 0.2, diameterBottom: 0.4, height: 2.2 }, scene);
+      trunk.position.set(x, 1.1, z);
+      trunk.material = trunkMat;
+
+      const fronds = MeshBuilder.CreateSphere(`Mini_Crown_${idx}`, { diameter: 1.6 }, scene);
+      fronds.position.set(x, 2.2, z);
+      fronds.material = palmMat;
+    });
+
+    // 2. Miniature Sacred Forest Canopy Trees in Western Basin
+    const forestTreeMat = new StandardMaterial('mini_forest_tree', scene);
+    forestTreeMat.diffuseColor = Color3.FromHexString('#1b5e20');
+
+    const forestCoords = [
+      [-20, 10], [-26, 12], [-28, 18], [-22, 22], [-18, 16], [-16, 24]
+    ];
+    forestCoords.forEach(([x, z], idx) => {
+      const tree = MeshBuilder.CreateSphere(`Mini_FTree_${idx}`, { diameter: 2.8 }, scene);
+      tree.position.set(x, 1.8, z);
+      tree.material = forestTreeMat;
+    });
+
+    // 3. Miniature Cavern Crystals in Eastern Chasm
+    const crystalMat = new StandardMaterial('mini_crystal_mat', scene);
+    crystalMat.diffuseColor = Color3.FromHexString('#1abc9c');
+    crystalMat.emissiveColor = Color3.FromHexString('#16a085');
+
+    const crystalCoords = [
+      [20, 2], [26, 4], [22, 8], [28, 8], [24, -2]
+    ];
+    crystalCoords.forEach(([x, z], idx) => {
+      const crystal = MeshBuilder.CreateCylinder(`Mini_Crys_${idx}`, { diameterTop: 0, diameterBottom: 0.6, height: 1.8, tessellation: 5 }, scene);
+      crystal.position.set(x, 1.2, z);
+      crystal.material = crystalMat;
+    });
+
+    // 4. Miniature Royal Palace Cypresses
+    const cypressMat = new StandardMaterial('mini_cypress_mat', scene);
+    cypressMat.diffuseColor = Color3.FromHexString('#145a32');
+
+    const cypressCoords = [
+      [-5, 10], [5, 10], [-5, 18], [5, 18]
+    ];
+    cypressCoords.forEach(([x, z], idx) => {
+      const cone = MeshBuilder.CreateCylinder(`Mini_Cyp_${idx}`, { diameterTop: 0.1, diameterBottom: 0.7, height: 2.6, tessellation: 8 }, scene);
+      cone.position.set(x, 2.7, z);
+      cone.material = cypressMat;
+    });
+  }
+
   public selectRegion(id: string): void {
     this.selectedLocId = id;
     const node = this.nodes.get(id);
@@ -688,6 +769,43 @@ export class MapUI {
     this.regionTitleEl.innerText = node.name;
     this.regionSubtitleEl.innerText = node.title;
     this.regionDescEl.innerText = node.description;
+
+    const regionChronicles: Record<string, { chapter: string; excerpt: string }> = {
+      kingdom_gate: {
+        chapter: 'Chronicle I: The Shattered Bastion',
+        excerpt: '“When skies darkened without rain, three hundred solar shields held the outer walls until the solar eclipse.”'
+      },
+      royal_market: {
+        chapter: 'Chronicle II: The Gilded Bazaar',
+        excerpt: '“Caravans from seven kingdoms traded lapis lazuli and solar amber around the sacred sun-blessed well.”'
+      },
+      temple_district: {
+        chapter: 'Chronicle III: Priests of the Noon Day',
+        excerpt: '“On the solstice, the noon sun struck the Shikhara altar gem, illuminating the three pillars of Dawn, Justice, and Eternity.”'
+      },
+      sacred_forest: {
+        chapter: 'Chronicle IV: Heart of the Banyan',
+        excerpt: '“Ancient banyans drank subterranean liquid sunlight, sheltering royal artisans when the city fell to silence.”'
+      },
+      ancient_cave: {
+        chapter: 'Chronicle V: The Crystal Lament',
+        excerpt: '“Deep mineral veins resonated with the earth, where grieving royal sentinels bound their souls into shadow sentries.”'
+      },
+      royal_palace: {
+        chapter: 'Chronicle VI: Harsha’s Final Stand',
+        excerpt: '“King Harsha drew his consecrated talwar in the marble hall, scattering the celestial dials to seal the Solar Crown.”'
+      },
+      sun_temple: {
+        chapter: 'Chronicle VII: The Awakening of Dawn',
+        excerpt: '“At the zenith where sky meets stone, the harmonic code 3 - 1 - 4 - 2 shall awaken the eternal solar flame.”'
+      }
+    };
+
+    const chronicle = regionChronicles[id];
+    if (chronicle && this.regionChronicleTitleEl && this.regionChronicleTextEl) {
+      this.regionChronicleTitleEl.innerText = chronicle.chapter;
+      this.regionChronicleTextEl.innerText = chronicle.excerpt;
+    }
 
     const isCurrent = id === this.currentLocId;
     const isDiscovered = this.discoveredLocations.has(id);

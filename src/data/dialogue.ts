@@ -146,5 +146,93 @@ export const DIALOGUE_DATA: Record<string, DialogueLine[]> = {
       speaker: 'The Sun Altar of Suryagarh',
       text: 'The golden dais hums with primordial warmth. Four radiant solar dials orbit the crystal pedestal of the Solar Crown.'
     }
+  ],
+  chronicle_1_gate: [
+    {
+      speaker: 'Chronicle I: The Shattered Bastion',
+      text: '“When the skies darkened without rain, King Harsha stationed three hundred guardians upon these bastions. Their solar shields burned bright enough to turn night into midday.”'
+    },
+    {
+      speaker: 'Chronicle I: The Shattered Bastion',
+      text: '“Yet the shadow was not an army of flesh, but a creeping void that fed on forgotten vows. One by one, the outer gates were sealed with three solar wheels, awaiting the return of an uncorrupted heart.”'
+    }
+  ],
+  chronicle_2_market: [
+    {
+      speaker: 'Chronicle II: The Gilded Bazaar',
+      text: '“In the reign of the third solar dynasty, caravans from seven distant kingdoms gathered at this square. Camels carried lapis lazuli, saffron silk, and glowing solar amber.”'
+    },
+    {
+      speaker: 'Chronicle II: The Gilded Bazaar',
+      text: '“The central well was said to flow with water blessed by the sun god Surya. Even today, dry desert winds whisper the songs of merchants who once bartered under crimson awnings.”'
+    }
+  ],
+  chronicle_3_temple: [
+    {
+      speaker: 'Chronicle III: The Priests of the Noon Day',
+      text: '“The high Shikharas were engineered so that on the summer solstice, a single sunbeam struck the altar gem and refracted through all three sacred inscribed pillars.”'
+    },
+    {
+      speaker: 'Chronicle III: The Priests of the Noon Day',
+      text: '“Those who read all three sacred truths: Dawn, Justice, and Eternity, receive the blessing to traverse the enchanted boundary into the Sacred Forest without losing their path.”'
+    }
+  ],
+  chronicle_4_forest: [
+    {
+      speaker: 'Chronicle IV: The Heart of the Banyan',
+      text: '“This forest is older than the stone palaces of Suryagarh. The sacred banyans lowered their aerial roots into subterranean streams, drinking liquid sunlight trapped within the earth.”'
+    },
+    {
+      speaker: 'Chronicle IV: The Heart of the Banyan',
+      text: '“When the city fell, the forest spirits sheltered the children of the artisans. The royal scholar still tends to the celestial scrolls beneath the eternal green canopy.”'
+    }
+  ],
+  chronicle_5_cave: [
+    {
+      speaker: 'Chronicle V: The Crystal Lament',
+      text: '“Deep within these caverns, veins of turquoise and amber crystals channel the resonance of the planet. Here the royal royal convoy fled with King Harsha’s personal seal.”'
+    },
+    {
+      speaker: 'Chronicle V: The Crystal Lament',
+      text: '“Consumed by grief and darkness, the sentinels bound their souls to the stone, transforming into Shadow Guardians. They strike at any who approach, testing whether the seeker is worthy or another pillager.”'
+    }
+  ],
+  chronicle_6_palace: [
+    {
+      speaker: 'Chronicle VI: Harsha’s Final Stand',
+      text: '“In this grand marble hall, King Harsha drew his consecrated talwar blade against the creeping eclipse. Knowing mortal weapons could not slay shadow, he placed his crown upon the high altar and scattered the astral dials.”'
+    },
+    {
+      speaker: 'Chronicle VI: Harsha’s Final Stand',
+      text: '“‘Let Suryagarh sleep,’ decreed the King, ‘until a Guardian awakens with eyes clear as dawn, to reunite the Seal, the Stones, and the Crown.’”'
+    }
+  ],
+  chronicle_7_suntemple: [
+    {
+      speaker: 'Chronicle VII: The Awakening of Dawn',
+      text: '“You stand at the zenith of Suryagarh, where sky touches stone. The Solar Crown was forged from celestial fire fallen from the sun chariot.”'
+    },
+    {
+      speaker: 'Chronicle VII: The Awakening of Dawn',
+      text: '“When all four celestial dials align to the ancient harmonic: 3 - 1 - 4 - 2, the eternal light shall pour from the heavens and dispel every shadow that haunts this ancient realm.”'
+    }
+  ],
+  inspect_chariot: [
+    {
+      speaker: 'Shattered Royal Chariot',
+      text: 'The gilded wheel of an ancient royal war chariot, half-swallowed by the desert sands. The crest of a golden sun with eight rays is still visible beneath centuries of sandstone dust.'
+    }
+  ],
+  inspect_statue: [
+    {
+      speaker: 'Statue of King Harsha',
+      text: 'A weathered sandstone sculpture of King Harsha standing proud with his talwar blade resting upon his chest. The pedestal inscription reads: “The Sun shall never set upon a righteous heart.”'
+    }
+  ],
+  inspect_lotus_pond: [
+    {
+      speaker: 'Sacred Lotus Pond of Suryagarh',
+      text: 'A circular stone pool where sacred golden and magenta lotuses float serenely on crystal-clear spring water. The water glimmers with soft magical ripples.'
+    }
   ]
 };

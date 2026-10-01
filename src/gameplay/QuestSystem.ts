@@ -2,6 +2,7 @@ import { Quest, INITIAL_QUESTS } from '../data/quests';
 
 export class QuestSystem {
   private quests: Map<string, Quest> = new Map();
+  public discoveredChronicles: Set<string> = new Set();
 
   constructor(savedQuests?: Quest[]) {
     if (savedQuests && savedQuests.length > 0) {
@@ -9,6 +10,18 @@ export class QuestSystem {
     } else {
       INITIAL_QUESTS.forEach(q => this.quests.set(q.id, JSON.parse(JSON.stringify(q))));
     }
+  }
+
+  public reset(): void {
+    this.quests.clear();
+    INITIAL_QUESTS.forEach(q => this.quests.set(q.id, JSON.parse(JSON.stringify(q))));
+    this.discoveredChronicles.clear();
+  }
+
+  public addChronicle(chronicleKey: string): boolean {
+    if (this.discoveredChronicles.has(chronicleKey)) return false;
+    this.discoveredChronicles.add(chronicleKey);
+    return true;
   }
 
   public getQuests(): Quest[] {

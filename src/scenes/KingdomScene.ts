@@ -117,6 +117,12 @@ export class KingdomScene {
       },
       (msg) => {
         this.hud.showToast(msg);
+      },
+      (chronicleKey, title) => {
+        this.startDialogue(chronicleKey, title, () => {
+          this.questSystem.addChronicle(chronicleKey);
+          this.hud.showToast(`Deciphered ${title}! Royal archive updated.`);
+        });
       }
     );
 
@@ -341,7 +347,7 @@ export class KingdomScene {
       this.questUI.hide();
     } else {
       this.closeOtherUIs();
-      this.questUI.show(this.questSystem.getQuests());
+      this.questUI.show(this.questSystem.getQuests(), this.questSystem.discoveredChronicles);
     }
   }
 

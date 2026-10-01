@@ -22,7 +22,8 @@ export class LocationManager {
     public questSystem: QuestSystem,
     public inventorySystem: InventorySystem,
     public onLocationChanged?: (config: AncientLocation3DConfig) => void,
-    public onFeedback?: (msg: string) => void
+    public onFeedback?: (msg: string) => void,
+    public onReadChronicle?: (key: string, title: string) => void
   ) {
     this.currentConfig = getLocationConfig3D(this.currentLocationId);
   }
@@ -48,9 +49,17 @@ export class LocationManager {
     this.worldManager.clear();
 
     // Load new location
-    this.worldManager.loadLocation(targetLocationId, (puzzleId) => {
-      this.handlePuzzleSolved(puzzleId);
-    });
+    this.worldManager.loadLocation(
+      targetLocationId,
+      (puzzleId) => {
+        this.handlePuzzleSolved(puzzleId);
+      },
+      (chronicleKey, title) => {
+        if (this.onReadChronicle) {
+          this.onReadChronicle(chronicleKey, title);
+        }
+      }
+    );
 
     // Position player
     const targetPos = spawnPos || targetConfig.spawnPosition;

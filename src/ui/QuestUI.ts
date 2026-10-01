@@ -27,9 +27,15 @@ export class QuestUI {
     this.container.querySelector('#quest-close')?.addEventListener('click', () => this.onClose());
   }
 
-  public show(quests: Quest[]): void {
+  public show(quests: Quest[], discoveredChronicles: Set<string> = new Set()): void {
     this.isOpen = true;
     this.listEl.innerHTML = '';
+
+    // Active & Completed Quests Section
+    const questHeader = document.createElement('div');
+    questHeader.className = 'text-xs font-serif font-bold text-[#d4af37] tracking-wider uppercase mb-2';
+    questHeader.innerText = 'MISSION EXPEDITION OBJECTIVES';
+    this.listEl.appendChild(questHeader);
 
     quests.forEach(q => {
       const qCard = document.createElement('div');
@@ -61,6 +67,46 @@ export class QuestUI {
 
       this.listEl.appendChild(qCard);
     });
+
+    // Ancient Story Chronicles Archive Section
+    const chronicleHeader = document.createElement('div');
+    chronicleHeader.className = 'text-xs font-serif font-bold text-[#d4af37] tracking-wider uppercase mt-6 mb-2 flex items-center justify-between';
+    chronicleHeader.innerHTML = `
+      <span>ANCIENT ROYAL CHRONICLES (${discoveredChronicles.size}/7 DECIPHERED)</span>
+      <span class="text-[10px] text-[#ffe599] font-normal">Found upon stone steles across the 7 realms</span>
+    `;
+    this.listEl.appendChild(chronicleHeader);
+
+    const allChronicles = [
+      { id: 'chronicle_1_gate', title: 'Chapter I: The Shattered Bastion', region: 'Ancient Kingdom Gate' },
+      { id: 'chronicle_2_market', title: 'Chapter II: The Gilded Bazaar', region: 'Royal Market' },
+      { id: 'chronicle_3_temple', title: 'Chapter III: Priests of the Noon Day', region: 'Temple District' },
+      { id: 'chronicle_4_forest', title: 'Chapter IV: The Heart of the Banyan', region: 'Sacred Forest' },
+      { id: 'chronicle_5_cave', title: 'Chapter V: The Crystal Lament', region: 'Ancient Cave' },
+      { id: 'chronicle_6_palace', title: 'Chapter VI: Harsha’s Final Stand', region: 'Royal Palace' },
+      { id: 'chronicle_7_suntemple', title: 'Chapter VII: The Awakening of Dawn', region: 'Sun Temple' }
+    ];
+
+    const chronicleGrid = document.createElement('div');
+    chronicleGrid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2.5';
+
+    allChronicles.forEach(c => {
+      const isFound = discoveredChronicles.has(c.id);
+      const card = document.createElement('div');
+      card.className = `p-2.5 rounded border text-xs font-serif ${isFound ? 'bg-[#2b1f13] border-[#ffd700]/70 text-[#ffe599]' : 'bg-[#140e08]/60 border-[#3d2a14] text-[#6e5d49]'}`;
+      card.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <span>${isFound ? '📜' : '🔒'}</span>
+          <div>
+            <div class="font-bold ${isFound ? 'text-[#f5c542]' : 'text-[#7a6a57]'}">${c.title}</div>
+            <div class="text-[10px] ${isFound ? 'text-[#cfbe9e]' : 'text-[#524434]'}">${c.region} • ${isFound ? 'DECIPHERED' : 'UNDISCOVERED'}</div>
+          </div>
+        </div>
+      `;
+      chronicleGrid.appendChild(card);
+    });
+
+    this.listEl.appendChild(chronicleGrid);
 
     this.container.classList.remove('hidden');
   }
