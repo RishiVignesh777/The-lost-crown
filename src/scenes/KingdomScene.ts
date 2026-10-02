@@ -131,6 +131,11 @@ export class KingdomScene {
       }
     );
 
+    // Void spawner wave alert
+    this.worldManager.spawnerSystem.onWaveSpawned = (count) => {
+      this.hud.showToast(`⚠️ Void Incursion Wave #${count}: 4 Monsters emerged from opposite rifts!`);
+    };
+
     // 3. Initialize UI overlays
     this.initUI();
 
@@ -209,7 +214,15 @@ export class KingdomScene {
     this.player.attack();
     const hitEnemy = this.worldManager.enemyManager.checkPlayerAttack(this.player);
     if (hitEnemy) {
-      this.hud.showToast(`Struck ${hitEnemy.name}! (${Math.max(0, hitEnemy.health)} HP)`);
+      if (hitEnemy.hitsToDie !== undefined) {
+        if (hitEnemy.health <= 0) {
+          this.hud.showToast(`💥 ${hitEnemy.name} Vanquished! (2/2 Hits)`);
+        } else {
+          this.hud.showToast(`⚔️ Struck ${hitEnemy.name}! (1/2 Hits Taken — 1 More Hit To Defeat)`);
+        }
+      } else {
+        this.hud.showToast(`Struck ${hitEnemy.name}! (${Math.max(0, hitEnemy.health)} HP)`);
+      }
     }
   }
 
@@ -429,6 +442,7 @@ export class KingdomScene {
     this.controller.update(deltaTime);
     this.worldManager.update(deltaTime, this.player);
     this.hud.setHealth(this.player.health, this.player.maxHealth);
+    this.hud.setSpawnerTimer(this.worldManager.spawnerSystem.getTimeRemaining());
 
     // Update interaction system with player position
     this.interactionSystem.update(this.player.root.position);
@@ -444,6 +458,11 @@ export class KingdomScene {
 
     this.worldManager.enemyManager.getLivingEnemies().forEach(e => {
       blips.push({ x: e.root.position.x, z: e.root.position.z, type: 'enemy' });
+    });
+
+    // 4 Directional Void Spawners on radar
+    this.worldManager.spawnerSystem.spawners.forEach(s => {
+      blips.push({ x: s.position.x, z: s.position.z, type: 'objective' });
     });
 
     this.locationManager.currentConfig.connectedLocations.forEach(c => {

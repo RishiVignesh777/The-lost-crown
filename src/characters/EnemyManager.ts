@@ -115,6 +115,17 @@ export class EnemyManager {
     });
   }
 
+  public spawnEnemy(config: EnemyConfig3D): Enemy3D {
+    const enemy = new Enemy3D(this.scene, config, (dead) => {
+      this.inventorySystem.addItem('ancient_coins', 10);
+      if (this.onEnemyKilled) {
+        this.onEnemyKilled(dead);
+      }
+    });
+    this.enemies.set(config.id, enemy);
+    return enemy;
+  }
+
   public getLivingEnemies(): Enemy3D[] {
     return Array.from(this.enemies.values()).filter(e => !e.isDead);
   }

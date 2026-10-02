@@ -3,7 +3,14 @@ export class HUD {
   private promptEl: HTMLDivElement;
   private toastEl: HTMLDivElement;
   private healthFillEl: HTMLDivElement;
+  private healthGhostEl?: HTMLDivElement;
   private healthValEl: HTMLDivElement;
+  private healthPercentEl?: HTMLDivElement;
+  private critTagEl?: HTMLDivElement;
+  private statusCardEl?: HTMLDivElement;
+  private damageFlashEl?: HTMLDivElement;
+  private spawnerTimerEl?: HTMLDivElement;
+  private lastHealth = 100;
   private questTitleEl: HTMLDivElement;
   private questObjEl: HTMLDivElement;
   private locationBadgeEl: HTMLDivElement;
@@ -38,17 +45,44 @@ export class HUD {
     root.appendChild(this.container);
 
     this.container.innerHTML = `
-      <!-- TOP LEFT: AREN STATUS -->
-      <div class="absolute top-4 left-4 pointer-events-auto bg-[#18110b]/90 border border-[#d4af37]/80 rounded p-3 shadow-lg min-w-[220px]">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-bold tracking-widest text-[#f5c542] font-serif">AREN • ROYAL GUARDIAN</span>
-          <span id="hud-hp-val" class="text-xs font-mono text-[#ffe599]">100 HP</span>
+      <!-- SCREEN DAMAGE FLASH VIGNETTE -->
+      <div id="hud-damage-flash" class="pointer-events-none fixed inset-0 border-[12px] border-red-600/0 transition-all duration-300 z-40"></div>
+
+      <!-- TOP LEFT: PROMINENT RPG HP BAR & GUARDIAN STATUS -->
+      <div id="hud-status-card" class="absolute top-4 left-4 pointer-events-auto bg-[#18110b]/95 border-2 border-[#d4af37] rounded-xl p-3.5 shadow-2xl min-w-[300px] max-w-[90vw] backdrop-blur-md transition-all duration-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2">
+            <span class="text-base">🛡️</span>
+            <div>
+              <span class="text-xs font-bold tracking-widest text-[#f5c542] font-serif block leading-none">AREN • ROYAL GUARDIAN</span>
+              <span id="hud-crit-tag" class="hidden text-[9px] font-bold text-[#ff4d4d] uppercase tracking-wider animate-pulse">⚠️ CRITICAL HEALTH</span>
+            </div>
+          </div>
+          <span id="hud-hp-val" class="text-xs font-mono font-bold text-[#ffe599]">100 / 100 HP</span>
         </div>
-        <div class="w-full h-2.5 bg-[#3a1010] rounded overflow-hidden">
-          <div id="hud-hp-fill" class="h-full bg-[#d93838] transition-all duration-200" style="width: 100%"></div>
+
+        <!-- HIGH-VISIBILITY DUAL-LAYER HP BAR -->
+        <div class="w-full h-5 bg-[#250a0a] rounded-lg overflow-hidden relative border border-[#6b2222] shadow-inner">
+          <!-- Ghost damage lag bar -->
+          <div id="hud-hp-ghost" class="absolute inset-y-0 left-0 bg-[#f39c12] opacity-80 transition-all duration-700 ease-out" style="width: 100%"></div>
+          <!-- Main Crimson Health Fill -->
+          <div id="hud-hp-fill" class="absolute inset-y-0 left-0 bg-gradient-to-r from-[#c0392b] via-[#e74c3c] to-[#ff7675] shadow-lg transition-all duration-200" style="width: 100%"></div>
+          <!-- Highlight Gloss -->
+          <div class="absolute inset-x-0 top-0 h-1/2 bg-white/20 pointer-events-none"></div>
+          <!-- Centered HP readout text inside the bar -->
+          <div id="hud-hp-percent" class="absolute inset-0 flex items-center justify-center text-[10px] font-mono font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            100%
+          </div>
         </div>
-        <div id="hud-location-badge" class="mt-2 text-[11px] text-[#cfbe9e] border-t border-[#4d3b24] pt-1">
-          Ancient Kingdom Gate
+
+        <div class="flex items-center justify-between mt-2.5 pt-1.5 border-t border-[#4d3b24]">
+          <div id="hud-location-badge" class="text-[11px] text-[#cfbe9e] truncate max-w-[180px]">
+            Ancient Kingdom Gate
+          </div>
+          <!-- 4 VOID SPAWNERS LIVE COUNTDOWN -->
+          <div id="hud-spawner-timer" class="text-[10px] font-mono font-bold text-[#ff7675] bg-[#2a0e2a] border border-[#a55eea]/60 rounded px-2 py-0.5 shadow">
+            ⚡ 4 RIFTS: 10s
+          </div>
         </div>
       </div>
 
@@ -117,7 +151,13 @@ export class HUD {
     this.promptEl = this.container.querySelector('#hud-prompt') as HTMLDivElement;
     this.toastEl = this.container.querySelector('#hud-toast') as HTMLDivElement;
     this.healthFillEl = this.container.querySelector('#hud-hp-fill') as HTMLDivElement;
+    this.healthGhostEl = this.container.querySelector('#hud-hp-ghost') as HTMLDivElement;
     this.healthValEl = this.container.querySelector('#hud-hp-val') as HTMLDivElement;
+    this.healthPercentEl = this.container.querySelector('#hud-hp-percent') as HTMLDivElement;
+    this.critTagEl = this.container.querySelector('#hud-crit-tag') as HTMLDivElement;
+    this.statusCardEl = this.container.querySelector('#hud-status-card') as HTMLDivElement;
+    this.damageFlashEl = this.container.querySelector('#hud-damage-flash') as HTMLDivElement;
+    this.spawnerTimerEl = this.container.querySelector('#hud-spawner-timer') as HTMLDivElement;
     this.questTitleEl = this.container.querySelector('#hud-quest-title') as HTMLDivElement;
     this.questObjEl = this.container.querySelector('#hud-quest-obj') as HTMLDivElement;
     this.locationBadgeEl = this.container.querySelector('#hud-location-badge') as HTMLDivElement;
@@ -218,10 +258,62 @@ export class HUD {
   }
 
   public setHealth(health: number, maxHealth: number): void {
-    this.healthValEl.innerText = `${Math.ceil(health)} HP`;
+    const curHP = Math.max(0, Math.ceil(health));
+    this.healthValEl.innerText = `${curHP} / ${maxHealth} HP`;
+
     const pct = Math.max(0, Math.min(100, (health / maxHealth) * 100));
     this.healthFillEl.style.width = `${pct}%`;
-    this.healthFillEl.style.backgroundColor = pct > 30 ? '#d93838' : '#8a1818';
+
+    if (this.healthPercentEl) {
+      this.healthPercentEl.innerText = `${Math.round(pct)}%`;
+    }
+
+    // Flash screen red and animate ghost damage bar on damage taken
+    if (health < this.lastHealth) {
+      if (this.damageFlashEl) {
+        this.damageFlashEl.classList.remove('border-red-600/0');
+        this.damageFlashEl.classList.add('border-red-600/75');
+        setTimeout(() => {
+          this.damageFlashEl?.classList.remove('border-red-600/75');
+          this.damageFlashEl?.classList.add('border-red-600/0');
+        }, 220);
+      }
+
+      // Delayed ghost bar animation
+      setTimeout(() => {
+        if (this.healthGhostEl) {
+          this.healthGhostEl.style.width = `${pct}%`;
+        }
+      }, 400);
+    } else {
+      // Healed or reset
+      if (this.healthGhostEl) {
+        this.healthGhostEl.style.width = `${pct}%`;
+      }
+    }
+
+    this.lastHealth = health;
+
+    // Critical low health status
+    if (pct <= 30 && pct > 0) {
+      this.critTagEl?.classList.remove('hidden');
+      this.statusCardEl?.classList.add('ring-2', 'ring-red-500', 'shadow-red-950/80');
+    } else {
+      this.critTagEl?.classList.add('hidden');
+      this.statusCardEl?.classList.remove('ring-2', 'ring-red-500', 'shadow-red-950/80');
+    }
+  }
+
+  public setSpawnerTimer(secondsRemaining: number): void {
+    if (this.spawnerTimerEl) {
+      const s = Math.ceil(secondsRemaining);
+      this.spawnerTimerEl.innerText = `⚡ 4 RIFTS: ${s}s`;
+      if (s <= 3) {
+        this.spawnerTimerEl.className = 'text-[10px] font-mono font-bold text-white bg-[#b71540] border border-[#ff3838] rounded px-2 py-0.5 shadow animate-pulse';
+      } else {
+        this.spawnerTimerEl.className = 'text-[10px] font-mono font-bold text-[#ff7675] bg-[#2a0e2a] border border-[#a55eea]/60 rounded px-2 py-0.5 shadow';
+      }
+    }
   }
 
   public setLocation(name: string, regionTitle: string): void {

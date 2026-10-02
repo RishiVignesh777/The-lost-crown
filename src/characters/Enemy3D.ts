@@ -12,7 +12,7 @@ import { Player } from '../player/Player';
 import { playSound } from '../utils/helpers';
 import { AUDIO_PATHS } from '../utils/constants';
 
-export type EnemyType3D = 'shadow_guardian' | 'ruin_golem';
+export type EnemyType3D = 'shadow_guardian' | 'ruin_golem' | 'void_crawler';
 
 export interface EnemyConfig3D {
   id: string;
@@ -20,6 +20,7 @@ export interface EnemyConfig3D {
   type: EnemyType3D;
   position: Vector3;
   patrolRadius?: number;
+  hitsToDie?: number;
 }
 
 export class Enemy3D {
@@ -32,6 +33,12 @@ export class Enemy3D {
   public damage: number;
   public moveSpeed: number;
   public isDead = false;
+  public hitsToDie?: number;
+
+  private hpPipMeshes: Mesh[] = [];
+  private hpBarRoot?: TransformNode;
+  private activePipMat?: StandardMaterial;
+  private emptyPipMat?: StandardMaterial;
 
   private startPos: Vector3;
   private patrolRadius: number;
@@ -61,13 +68,20 @@ export class Enemy3D {
     this.id = config.id;
     this.name = config.name;
     this.type = config.type;
+    this.hitsToDie = config.hitsToDie;
     this.startPos = config.position.clone();
     this.patrolRadius = config.patrolRadius ?? 8.0;
 
     this.root = new TransformNode(`Enemy_${config.id}`, scene);
     this.root.position.copyFrom(config.position);
 
-    if (this.type === 'shadow_guardian') {
+    if (this.type === 'void_crawler') {
+      this.maxHealth = this.hitsToDie ?? 2;
+      this.health = this.hitsToDie ?? 2;
+      this.damage = 10;
+      this.moveSpeed = 4.2;
+      this.buildVoidCrawler();
+    } else if (this.type === 'shadow_guardian') {
       this.maxHealth = 60;
       this.health = 60;
       this.damage = 14;
@@ -79,6 +93,154 @@ export class Enemy3D {
       this.damage = 22;
       this.moveSpeed = 3.2;
       this.buildRuinGolem();
+    }
+
+    if (this.hitsToDie) {
+      this.buildOverheadHealthPips();
+    }
+  }
+
+  private buildVoidCrawler(): void {
+    const scene = this.scene;
+    const root = this.root;
+
+    const voidMat = new StandardMaterial(`mat_void_${this.id}`, scene);
+    voidMat.diffuseColor = Color3.FromHexString('#1a0933');
+    voidMat.emissiveColor = Color3.FromHexString('#4a154b');
+
+    const eyeMat = new StandardMaterial(`mat_void_eye_${this.id}`, scene);
+    eyeMat.diffuseColor = Color3.FromHexString('#ff0055');
+    eyeMat.emissiveColor = Color3.FromHexString('#ff0033');
+
+    const bladeMat = new StandardMaterial(`mat_void_blade_${this.id}`, scene);
+    bladeMat.diffuseColor = Color3.FromHexString('#0b0416');
+    bladeMat.emissiveColor = Color3.FromHexString('#8e44ad');
+
+    // Torso
+    this.torso = new TransformNode(`Torso_${this.id}`, scene);
+    this.torso.parent = root;
+    this.torso.position.y = 1.0;
+
+    const body = MeshBuilder.CreateSphere(`Body_${this.id}`, { diameterX: 0.8, diameterY: 0.9, diameterZ: 0.8 }, scene);
+    body.material = voidMat;
+    body.parent = this.torso;
+    this.meshes.push(body);
+
+    // Spines along spine
+    for (let i = 0; i < 3; i++) {
+      const spine = MeshBuilder.CreateCylinder(`Spine_${i}_${this.id}`, { diameterTop: 0, diameterBottom: 0.2, height: 0.5 }, scene);
+      spine.material = bladeMat;
+      spine.position.set(0, 0.2 + i * 0.2, -0.35);
+      spine.rotation.x = -0.6;
+      spine.parent = this.torso;
+      this.meshes.push(spine);
+    }
+
+    // Head
+    this.head = new TransformNode(`Head_${this.id}`, scene);
+    this.head.parent = this.torso;
+    this.head.position.set(0, 0.7, 0.2);
+
+    const skull = MeshBuilder.CreateBox(`Skull_${this.id}`, { width: 0.45, height: 0.45, depth: 0.5 }, scene);
+    skull.material = voidMat;
+    skull.parent = this.head;
+    this.meshes.push(skull);
+
+    // Glowing menacing red eyes
+    const eyeL = MeshBuilder.CreateSphere(`EyeL_${this.id}`, { diameter: 0.12 }, scene);
+    eyeL.material = eyeMat;
+    eyeL.position.set(-0.12, 0.05, 0.26);
+    eyeL.parent = this.head;
+    this.meshes.push(eyeL);
+
+    const eyeR = MeshBuilder.CreateSphere(`EyeR_${this.id}`, { diameter: 0.12 }, scene);
+    eyeR.material = eyeMat;
+    eyeR.position.set(0.12, 0.05, 0.26);
+    eyeR.parent = this.head;
+    this.meshes.push(eyeR);
+
+    // Mantis Blades (Arms)
+    this.armL = new TransformNode(`ArmL_${this.id}`, scene);
+    this.armL.parent = this.torso;
+    this.armL.position.set(-0.55, 0.3, 0.2);
+
+    const bladeL = MeshBuilder.CreateCylinder(`BladeL_${this.id}`, { diameterTop: 0.02, diameterBottom: 0.15, height: 1.1 }, scene);
+    bladeL.material = bladeMat;
+    bladeL.rotation.z = -0.6;
+    bladeL.position.set(-0.25, -0.4, 0.1);
+    bladeL.parent = this.armL;
+    this.meshes.push(bladeL);
+
+    this.armR = new TransformNode(`ArmR_${this.id}`, scene);
+    this.armR.parent = this.torso;
+    this.armR.position.set(0.55, 0.3, 0.2);
+
+    const bladeR = MeshBuilder.CreateCylinder(`BladeR_${this.id}`, { diameterTop: 0.02, diameterBottom: 0.15, height: 1.1 }, scene);
+    bladeR.material = bladeMat;
+    bladeR.rotation.z = 0.6;
+    bladeR.position.set(0.25, -0.4, 0.1);
+    bladeR.parent = this.armR;
+    this.meshes.push(bladeR);
+
+    // 2 Insectoid Legs
+    this.legL = new TransformNode(`LegL_${this.id}`, scene);
+    this.legL.parent = root;
+    this.legL.position.set(-0.3, 0.9, 0);
+
+    const limbL = MeshBuilder.CreateCylinder(`LimbL_${this.id}`, { diameter: 0.14, height: 0.9 }, scene);
+    limbL.material = voidMat;
+    limbL.position.y = -0.45;
+    limbL.parent = this.legL;
+    this.meshes.push(limbL);
+
+    this.legR = new TransformNode(`LegR_${this.id}`, scene);
+    this.legR.parent = root;
+    this.legR.position.set(0.3, 0.9, 0);
+
+    const limbR = MeshBuilder.CreateCylinder(`LimbR_${this.id}`, { diameter: 0.14, height: 0.9 }, scene);
+    limbR.material = voidMat;
+    limbR.position.y = -0.45;
+    limbR.parent = this.legR;
+    this.meshes.push(limbR);
+  }
+
+  private buildOverheadHealthPips(): void {
+    const scene = this.scene;
+    this.hpBarRoot = new TransformNode(`HpBarRoot_${this.id}`, scene);
+    this.hpBarRoot.parent = this.root;
+    this.hpBarRoot.position.set(0, 2.3, 0);
+
+    this.activePipMat = new StandardMaterial(`mat_hp_active_${this.id}`, scene);
+    this.activePipMat.diffuseColor = Color3.FromHexString('#ff3838');
+    this.activePipMat.emissiveColor = Color3.FromHexString('#ff2222');
+
+    this.emptyPipMat = new StandardMaterial(`mat_hp_empty_${this.id}`, scene);
+    this.emptyPipMat.diffuseColor = Color3.FromHexString('#333333');
+    this.emptyPipMat.alpha = 0.5;
+
+    const totalPips = this.hitsToDie ?? 2;
+    const pipW = 0.32;
+    const gap = 0.08;
+    const totalW = totalPips * pipW + (totalPips - 1) * gap;
+    const startX = -totalW / 2 + pipW / 2;
+
+    for (let i = 0; i < totalPips; i++) {
+      const pip = MeshBuilder.CreateBox(`HpPip_${i}_${this.id}`, { width: pipW, height: 0.1, depth: 0.05 }, scene);
+      pip.position.set(startX + i * (pipW + gap), 0, 0);
+      pip.material = this.activePipMat;
+      pip.parent = this.hpBarRoot;
+      this.hpPipMeshes.push(pip);
+    }
+  }
+
+  public updateHpPips(): void {
+    if (!this.hpPipMeshes.length || !this.activePipMat || !this.emptyPipMat) return;
+    for (let i = 0; i < this.hpPipMeshes.length; i++) {
+      if (i < this.health) {
+        this.hpPipMeshes[i].material = this.activePipMat;
+      } else {
+        this.hpPipMeshes[i].material = this.emptyPipMat;
+      }
     }
   }
 
@@ -299,9 +461,23 @@ export class Enemy3D {
   public takeDamage(amount: number): boolean {
     if (this.isDead) return false;
 
-    this.health = Math.max(0, this.health - amount);
-    this.hurtTimer = 0.3;
-    playSound(AUDIO_PATHS.HIT, 0.8);
+    if (this.hitsToDie !== undefined && this.hitsToDie > 0) {
+      // Exactly 1 hit deducted per player attack
+      this.health = Math.max(0, this.health - 1);
+    } else {
+      this.health = Math.max(0, this.health - amount);
+    }
+
+    this.updateHpPips();
+    this.hurtTimer = 0.35;
+    playSound(AUDIO_PATHS.HIT, 0.9);
+
+    // Stagger knockback slightly away from player facing
+    this.root.position.addInPlace(new Vector3(
+      -Math.sin(this.root.rotation.y) * 0.45,
+      0,
+      -Math.cos(this.root.rotation.y) * 0.45
+    ));
 
     // Flash meshes red
     this.meshes.forEach(m => {

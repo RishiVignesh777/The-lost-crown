@@ -9,6 +9,7 @@ import { InventorySystem } from '../gameplay/InventorySystem';
 import { NPCManager } from '../characters/NPCManager';
 import { EnemyManager } from '../characters/EnemyManager';
 import { EnvironmentDetailsSystem } from './EnvironmentDetailsSystem';
+import { MonsterSpawnerSystem } from './MonsterSpawnerSystem';
 import { Player } from '../player/Player';
 
 export class WorldManager {
@@ -19,6 +20,7 @@ export class WorldManager {
   public puzzleSystem: PuzzleSystem;
   public npcManager: NPCManager;
   public enemyManager: EnemyManager;
+  public spawnerSystem: MonsterSpawnerSystem;
 
   constructor(
     public scene: Scene,
@@ -33,6 +35,7 @@ export class WorldManager {
     this.puzzleSystem = new PuzzleSystem(scene);
     this.npcManager = new NPCManager(scene);
     this.enemyManager = new EnemyManager(scene, inventorySystem, onEnemyKilled);
+    this.spawnerSystem = new MonsterSpawnerSystem(scene, this.enemyManager);
   }
 
   public loadLocation(
@@ -62,10 +65,14 @@ export class WorldManager {
     // 6. Spawn 3D Enemies
     this.enemyManager.spawnEnemiesForLocation(locationId);
 
-    // 7. Setup Interactive Puzzles
+    // 7. Setup 4 Directional Monster Spawners (North, South, East, West)
+    const spawnerDist = Math.max(18, Math.min(32, config.worldRadius * 0.65));
+    this.spawnerSystem.setupSpawners(new Vector3(0, 0, 0), spawnerDist);
+
+    // 8. Setup Interactive Puzzles
     this.puzzleSystem.setupPuzzlesForLocation(locationId, this.interactionSystem, onPuzzleSolved);
 
-    // 8. Spawn World Pickups for this location
+    // 9. Spawn World Pickups for this location
     this.spawnLocationPickups(locationId);
 
     return config;
@@ -90,6 +97,7 @@ export class WorldManager {
   public update(deltaTime: number, player: Player): void {
     this.npcManager.update(deltaTime);
     this.enemyManager.update(deltaTime, player);
+    this.spawnerSystem.update(deltaTime, player);
     this.inventorySystem.updateWorldPickups(deltaTime);
   }
 
@@ -97,6 +105,7 @@ export class WorldManager {
     this.terrainSystem.clear();
     this.buildingSystem.clear();
     this.detailsSystem.clear();
+    this.spawnerSystem.clear();
     this.puzzleSystem.clear();
     this.npcManager.clear();
     this.enemyManager.clear();
