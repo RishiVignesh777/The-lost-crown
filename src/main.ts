@@ -15,6 +15,7 @@ async function bootstrap() {
 
   // Display the 3D start & controls banner directly over the live 3D world
   new MenuScene((isNewGame) => {
+    kingdomScene.musicSystem.initAudio();
     if (isNewGame) {
       kingdomScene.resetToStart();
     }

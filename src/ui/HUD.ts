@@ -29,7 +29,8 @@ export class HUD {
     private onAttack: () => void,
     private onInteract: () => void,
     private onJump: () => void,
-    private onVirtualMove?: (x: number, z: number) => void
+    private onVirtualMove?: (x: number, z: number) => void,
+    private onToggleAudio?: () => boolean
   ) {
     const root = document.getElementById('ui-root') || document.body;
     this.container = document.createElement('div');
@@ -96,6 +97,7 @@ export class HUD {
         <button id="btn-bag" class="px-2.5 py-1 text-xs font-serif text-[#f5c542] hover:text-white bg-[#2b1e12] hover:bg-[#4d3824] rounded transition cursor-pointer">[I] Bag</button>
         <button id="btn-map" class="px-2.5 py-1 text-xs font-serif text-[#f5c542] hover:text-white bg-[#2b1e12] hover:bg-[#4d3824] rounded transition cursor-pointer">[M] Map</button>
         <button id="btn-log" class="px-2.5 py-1 text-xs font-serif text-[#f5c542] hover:text-white bg-[#2b1e12] hover:bg-[#4d3824] rounded transition cursor-pointer">[J] Quests</button>
+        <button id="btn-audio" class="px-2.5 py-1 text-xs font-serif text-[#f5c542] hover:text-white bg-[#2b1e12] hover:bg-[#4d3824] rounded transition cursor-pointer">🎵 Audio</button>
         <button id="btn-pause" class="px-2.5 py-1 text-xs font-serif text-[#f5c542] hover:text-white bg-[#2b1e12] hover:bg-[#4d3824] rounded transition cursor-pointer">[ESC] Menu</button>
       </div>
 
@@ -134,6 +136,13 @@ export class HUD {
     this.container.querySelector('#btn-bag')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenInventory(); });
     this.container.querySelector('#btn-map')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenMap(); });
     this.container.querySelector('#btn-log')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenQuests(); });
+    this.container.querySelector('#btn-audio')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.onToggleAudio) {
+        const isMuted = this.onToggleAudio();
+        this.showToast(isMuted ? 'Background Music: Muted' : 'Background Music: Playing', 1600);
+      }
+    });
     this.container.querySelector('#btn-pause')?.addEventListener('click', (e) => { e.stopPropagation(); this.onOpenMenu(); });
 
     this.container.querySelector('#btn-touch-attack')?.addEventListener('click', (e) => { e.stopPropagation(); this.onAttack(); });

@@ -155,8 +155,18 @@ export class PlayerController {
     if (isMoving) {
       moveVector.normalize();
 
-      // Move player
-      this.player.root.position.addInPlace(moveVector.scale(currentSpeed * deltaTime));
+      // Compute displacement vector
+      const deltaX = moveVector.x * currentSpeed * deltaTime;
+      const deltaZ = moveVector.z * currentSpeed * deltaTime;
+
+      // Obstacle collision resolution with independent X/Z sliding so player cannot phase through meshes
+      const playerRadius = 0.65;
+      if (this.canMoveInDirection(new Vector3(Math.sign(deltaX), 0, 0), Math.abs(deltaX), playerRadius)) {
+        this.player.root.position.x += deltaX;
+      }
+      if (this.canMoveInDirection(new Vector3(0, 0, Math.sign(deltaZ)), Math.abs(deltaZ), playerRadius)) {
+        this.player.root.position.z += deltaZ;
+      }
 
       // Smoothly rotate Aren to face movement vector
       const targetAngle = Math.atan2(moveVector.x, moveVector.z);
@@ -224,5 +234,52 @@ export class PlayerController {
     this.camera.target.x = this.player.root.position.x;
     this.camera.target.y = targetY;
     this.camera.target.z = this.player.root.position.z;
+  }
+
+  private canMoveInDirection(dir: Vector3, dist: number, radius: number): boolean {
+    if (dir.lengthSquared() < 0.001 || dist < 0.0001) return true;
+
+    // Check multiple probe points: center, left shoulder, right shoulder at knee and chest heights
+    const heights = [0.45, 1.1];
+    const rayDist = dist + radius;
+
+    for (const h of heights) {
+      for (const lateralOffset of [-0.3, 0, 0.3]) {
+        // Perpendicular vector for shoulder width probe
+        const perp = new Vector3(-dir.z, 0, dir.x).scale(lateralOffset);
+        const origin = new Vector3(
+          this.player.root.position.x + perp.x,
+          this.player.root.position.y + h,
+          this.player.root.position.z + perp.z
+        );
+
+        const ray = new Ray(origin, dir, rayDist);
+        const hit = this.scene.pickWithRay(ray, (mesh) => this.isSolidObstacle(mesh));
+        if (hit && hit.hit && hit.distance <= rayDist) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  private isSolidObstacle(mesh: any): boolean {
+    if (!mesh || !mesh.checkCollisions) return false;
+    const name = mesh.name;
+    // Walkable floor surfaces (terrain, road, carpets, curbs, terraces) shouldn't block horizontal movement
+    if (
+      name.includes('Ground') ||
+      name.includes('Road') ||
+      name.includes('Carpet') ||
+      name.includes('Curb') ||
+      name.includes('Terrace') ||
+      name.includes('Stream') ||
+      name.includes('Plaza') ||
+      name.includes('Floor')
+    ) {
+      return false;
+    }
+    return true;
   }
 }

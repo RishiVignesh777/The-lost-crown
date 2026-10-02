@@ -446,6 +446,17 @@ export class EnvironmentDetailsSystem {
       blade.rotation.y = angle;
       blade.parent = root;
     }
+
+    // Solid collision barrier
+    const succCol = MeshBuilder.CreateCylinder('Succulent_Collider', {
+      diameter: 1.8 * scale,
+      height: 2.0 * scale
+    }, scene);
+    succCol.position.y = 1.0 * scale;
+    succCol.isVisible = false;
+    succCol.checkCollisions = true;
+    succCol.parent = root;
+
     return root;
   }
 
@@ -517,6 +528,7 @@ export class EnvironmentDetailsSystem {
     const foliage = MeshBuilder.CreateSphere('Bush_Foliage', { diameter: 2.2 }, scene);
     foliage.position.set(0, 0.9, 0);
     foliage.material = bushMat;
+    foliage.checkCollisions = true;
     foliage.parent = root;
 
     // Blooming flowers scattered on bush
@@ -560,13 +572,23 @@ export class EnvironmentDetailsSystem {
     // Stone Basin Rim
     const rim = MeshBuilder.CreateCylinder('Pond_Rim', {
       diameter: radius * 2,
-      height: 0.5,
+      height: 0.8,
       tessellation: 32
     }, scene);
-    rim.position.y = 0.25;
+    rim.position.y = 0.4;
     rim.material = stoneMat;
     rim.checkCollisions = true;
     rim.parent = root;
+
+    // Solid basin collision cylinder
+    const pondCol = MeshBuilder.CreateCylinder('Pond_Collider', {
+      diameter: radius * 1.95,
+      height: 1.8
+    }, scene);
+    pondCol.position.y = 0.9;
+    pondCol.isVisible = false;
+    pondCol.checkCollisions = true;
+    pondCol.parent = root;
 
     // Water surface
     const water = MeshBuilder.CreateCylinder('Pond_Water', {
@@ -653,6 +675,16 @@ export class EnvironmentDetailsSystem {
     light.range = 8;
     this.detailLights.push(light);
 
+    // Solid collision barrier
+    const fungiCol = MeshBuilder.CreateCylinder('Fungi_Collider', {
+      diameter: 1.6,
+      height: 1.8
+    }, scene);
+    fungiCol.position.y = 0.9;
+    fungiCol.isVisible = false;
+    fungiCol.checkCollisions = true;
+    fungiCol.parent = root;
+
     return root;
   }
 
@@ -692,6 +724,7 @@ export class EnvironmentDetailsSystem {
     }, scene);
     tree.position.y = 1.2 * scale + height / 2;
     tree.material = foliageMat;
+    tree.checkCollisions = true;
     tree.parent = root;
 
     return root;
@@ -763,6 +796,7 @@ export class EnvironmentDetailsSystem {
     chassis.position.set(0, 0.4, 0);
     chassis.rotation.z = 0.35;
     chassis.material = woodMat;
+    chassis.checkCollisions = true;
     chassis.parent = root;
 
     // Gilded Spoked Wheel sticking out of sand
@@ -771,6 +805,7 @@ export class EnvironmentDetailsSystem {
     wheel.rotation.x = Math.PI / 2;
     wheel.rotation.y = 0.2;
     wheel.material = goldMat;
+    wheel.checkCollisions = true;
     wheel.parent = root;
 
     if (interaction && onInspect) {
@@ -816,6 +851,8 @@ export class EnvironmentDetailsSystem {
     const torso = MeshBuilder.CreateBox('Statue_Torso', { width: 1.4, height: 2.6, depth: 1.0 }, scene);
     torso.position.y = 3.1;
     torso.material = stoneMat;
+    torso.checkCollisions = true;
+    torso.parent = root;
     torso.parent = root;
 
     const head = MeshBuilder.CreateSphere('Statue_Head', { diameter: 1.0 }, scene);

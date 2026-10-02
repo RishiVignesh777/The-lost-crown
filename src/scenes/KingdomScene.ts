@@ -18,6 +18,7 @@ import { InventoryUI } from '../ui/InventoryUI';
 import { QuestUI } from '../ui/QuestUI';
 import { MapUI } from '../ui/MapUI';
 import { MenuUI } from '../ui/MenuUI';
+import { MusicSystem } from '../audio/MusicSystem';
 import { playSound, startAmbientLoop } from '../utils/helpers';
 import { AUDIO_PATHS } from '../utils/constants';
 
@@ -28,6 +29,9 @@ export class KingdomScene {
   // Player & Controls
   public player!: Player;
   public controller!: PlayerController;
+
+  // Audio System
+  public musicSystem: MusicSystem = new MusicSystem();
 
   // Systems
   public worldManager!: WorldManager;
@@ -114,6 +118,7 @@ export class KingdomScene {
       (config) => {
         this.hud.setLocation(config.name, config.regionTitle);
         this.hud.showToast(`Entering ${config.name}`);
+        this.musicSystem.setRegion(config.id);
       },
       (msg) => {
         this.hud.showToast(msg);
@@ -135,8 +140,10 @@ export class KingdomScene {
     // 5. Load Initial Location
     this.locationManager.changeLocation(startLoc, startPos, existingSave?.playerRotation);
 
-    // 6. Start Ambient Audio
-    startAmbientLoop(AUDIO_PATHS.AMBIENT, 0.35);
+    // 6. Start Ambient Audio and Indian Mythical Soundtrack
+    this.musicSystem.initAudio();
+    this.musicSystem.setRegion(startLoc);
+    startAmbientLoop(AUDIO_PATHS.AMBIENT, 0.25);
 
     // 7. Engine Render Loop
     this.engine.runRenderLoop(() => {
@@ -161,7 +168,8 @@ export class KingdomScene {
       () => this.handlePlayerAttack(),
       () => this.handleInteraction(),
       () => this.controller.tryJump(),
-      (x, z) => this.controller.virtualInput.set(x, 0, z)
+      (x, z) => this.controller.virtualInput.set(x, 0, z),
+      () => this.musicSystem.toggleMute()
     );
 
     this.dialogueUI = new DialogueUI(() => {
